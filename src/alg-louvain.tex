@@ -1,0 +1,82 @@
+\begin{algorithm}[hbtp]
+\caption{Our parallel Louvain algorithm.}
+\label{alg:louvain}
+\begin{algorithmic}[1]
+\Function{louvain}{$G$} \label{alg:louvain--main-begin}
+  \State Vertex membership: $C \gets [0 .. |V|)$ \textbf{;} $G' \gets G$ \label{alg:louvain--initialization-begin}
+  \ForAll{$l_p \in [0 .. \text{\small{MAX\_PASSES}})$} \label{alg:louvain--passes-begin}
+    \State $\Sigma' \gets K' \gets vertexWeights(G')$ \textbf{;} $C' \gets [0 .. |V'|)$ \label{alg:louvain--reset-weights}
+    \State Mark all vertices in $G'$ as unprocessed \label{alg:louvain--reset-affected}
+    \State $l_i \gets louvainMove(G', C', K', \Sigma')$ \label{alg:louvain--local-move}
+    \If{$l_i \le 1$} \textbf{break} \Comment{Globally converged?} \label{alg:louvain--globally-converged}
+    \EndIf
+    \State $|\Gamma|, |\Gamma_{old}| \gets$ Number of communities in $C$, $C'$
+    \If{$|\Gamma|/|\Gamma_{old}| > \tau_{agg}$} \textbf{break} \Comment{Low shrink?} \label{alg:louvain--aggregation-tolerance}
+    \EndIf
+    \State $C' \gets$ Renumber communities in $C'$ \label{alg:louvain--renumber}
+    \State $C \gets$ Lookup dendrogram using $C$ to $C'$ \label{alg:louvain--lookup}
+    \State $G' \gets$ Aggregate communities in $G'$ using $C'$ \label{alg:louvain--aggregate}
+    \State $\tau \gets \tau / \text{\small{TOLERANCE\_DROP}}$ \Comment{Threshold scaling} \label{alg:louvain--threshold-scaling}
+  \EndFor \label{alg:louvain--passes-end}
+  \State $C \gets$ Lookup dendrogram using $C$ to $C'$ \label{alg:louvain--lookup-last}
+  \Return{$C$} \label{alg:louvain--main-return}
+\EndFunction \label{alg:louvain--main-end}
+
+\Statex
+
+\Function{louvainMove}{$G', C', K', \Sigma'$} \label{alg:louvain--move-begin}
+  \ForAll{$l_i \in [0 .. \text{\small{MAX\_ITERATIONS}})$} \label{alg:louvain--iterations-begin}
+    \State Delta modularity: $\Delta Q \gets 0$
+    \ForAll{unprocessed $i \in V'$ \textbf{in parallel}}
+      \State Mark $i$ as processed (prune) \label{alg:louvain--prune}
+      \State $c^* \gets$ Best community linked to $i$ in $G'$ \label{alg:louvain--best-community-begin}
+      \State $\delta Q^* \gets$ Delta-modularity of moving $i$ to $c^*$ \label{alg:louvain--best-community-end}
+      \If{$c^* = C'[i]$} \textbf{continue} \label{alg:louvain--best-community-same}
+      \EndIf
+      \State $\Sigma'[C'[i]] -= K'[i]$ \textbf{;} $\Sigma'[c^*] += K'[i]$ \textbf{atomic} \label{alg:louvain--perform-move-begin}
+      \State $C'[i] \gets c^*$ \textbf{;} $\Delta Q \gets \Delta Q + \delta Q^*$ \label{alg:louvain--perform-move-end}
+      \State Mark neighbors of $i$ as unprocessed \label{alg:louvain--remark}
+    \EndFor \label{alg:louvain--iterations-end}
+    \If{$\Delta Q \le \tau$} \textbf{break} \Comment{Locally converged?} \label{alg:louvain--locally-converged}
+    \EndIf
+  \EndFor
+  \Return{$l_i$}
+\EndFunction \label{alg:louvain--move-end}
+
+\Statex
+
+\Function{louvainCommunityVertices}{$G', C', K', \Sigma'$}
+  \State $G'_{C'}.offsets \gets countCommunityVertices(G', C')$
+  \State $G'_{C'}.offsets \gets exclusiveScan(G'_{C'}.offsets)$
+  \ForAll{$i \in V'$ \textbf{in parallel}}
+    \State Add edge $(C'[i], i)$ to CSR $G'_{C'}$ atomically
+  \EndFor
+\EndFunction
+
+\Function{louvainAggregate}{$G', C', K', \Sigma'$}
+  \State $G''.offsets \gets communityTotalDegree(G', C')$
+  \State $G''.offsets \gets exclusiveScan(G''.offsets)$
+  \State $|\Gamma| \gets$ Number of communities in $C'$
+  \ForAll{$c \in [0, |\Gamma|)$ \textbf{in parallel}}
+    \If{Degree of $c$ in $G'_{C'} = 0$} \textbf{continue}
+    \EndIf
+    \State $H \gets \{\}$
+    \ForAll{$i \in G'_{C'}.edges(c)$}
+      \State $scanCommunities(H, G', i, C')$
+    \EndFor
+    \ForAll{$(d, w) \in H$}
+      \State Add edge $(c, d, w)$ to CSR $G''$ atomically
+    \EndFor
+  \EndFor
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+
+
+
+%% Parameter setting
+% $\tau \gets TOLERANCE\_INITIAL$
+% TOLERANCE\_INITIAL = 0.01
+% TOLERANCE\_DECLINE = 10
+% MAX\_PASSES = 500

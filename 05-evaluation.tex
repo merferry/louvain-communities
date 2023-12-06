@@ -1,0 +1,34 @@
+\subsection{Experimental Setup}
+\label{sec:setup}
+
+We use a server that has two $16$-core x86-based Intel Xeon Gold 6226R processors running at $2.90$ GHz. Each core has an L1 cache of $1$ MB, an L2 cache of $16$ MB, and a shared L3 cache of $22$ MB. The machine has $93.4$ GB of system memory and runs on CentOS Stream 8. We use GCC 8.5 and OpenMP 4.5. Table \ref{tab:dataset} shows the graphs we use in our experiments. All of them are obtained from the SuiteSparse Matrix Collection \cite{suite19}.
+
+\input{src/tab-dataset}
+\input{src/fig-louvain-compare}
+\input{src/fig-louvain-compares}
+\input{src/fig-rak-compare}
+\input{src/fig-rak-compares}
+\input{src/fig-louvainrak-ss}
+
+
+
+
+\subsection{Performance Comparison for Louvain}
+
+We now compare the performance of our Louvain with Vite (Louvain), Grappolo (Louvain), and NetworKit Louvain. For Vite, we convert the graph datasets to Vite's binary graph format, run it on a single node (Vite supports distributed community detection) with threshold cycling/scaling optimization, and measure the reported average total time. For Grappolo, we measure the run it on the same system, and measure the reported total time. For NetworKit, we use a Python script to invoke \texttt{PLM} (Parallel Louvain Method), and measure the total time reported with \texttt{getTiming()}. For each graph, we measure the runtime of each implementation five times, for averaging. We also record the modularity of communities obtained, as reported by each implementation.
+
+Figure \ref{fig:louvain-compare} shows the runtimes of Vite (Louvain), Grappolo (Louvain), NetworKit Louvain, and our Louvain on each graph in the dataset. Figure \ref{fig:louvain-compares} shows the speedup of our Louvain with respect to each implementation mentioned above. Our Louvain is on average $50\times$, $22\times$, and $20\times$ faster than Vite, Grappolo, and NetworKit respectively. On the \textit{sk-2005} graph, our Louvain finds communities in $6.8$ seconds, and thus achieve a processing rate of $560$ million edges/s. Figure \ref{fig:louvain-compare} also shows the modularity of communities obtained with each implementation on the secondary (right) Y-axis. Our Louvain on average obtains $3.1\%$ higher modularity than Vite (especially on web graph), and $0.6\%$ lower modularity than Grappolo and NetworKit (especially on social networks with poor clustering).
+
+
+
+
+\subsection{Performance Comparison for LPA}
+
+Next, we compare the performance of our LPA with NetworKit LPA. We use a Python script to call NetworKit's \texttt{PLP} (Parallel Label Propagation), and measure the runtime of their implementation with \texttt{getTiming()}. In Figure \ref{fig:rak-compare}, we compare the performance of our LPA and NetworKit LPA. We also attempt to compare with igraph LPA and Traag et al. FLPA, but find the runtime with both implementations to be extremely high. As before, we measure the runtime with our LPA and NetworKit LPA five times, for averaging. Our LPA is on average $40.5\times$ faster than NetworKit, and is significantly faster on road networks and protein k-mer graphs (which have a low $|E|/|V|$ ratio). On the \textit{sk-2005} graph, our LPA finds communities in $2.7$ seconds, and thus achieve a processing rate of $1.4$ billion edges/s.
+
+
+
+
+\subsection{Strong Scaling of GVECD}
+
+Finally, we measure the strong scaling performance of our Louvain and LPA. To this end, we adjust the number of thread from $1$ to $64$ in multiples of $2$ for each input graph, and measure the time taken for finding communities within each graph with our Louvain and LPA. As for each experiment above, for each graph, and for each thread count, we perform our Louvain and LPA five times for averaging. The results are shown in Figure \ref{fig:louvainrak-ss}. With 32 threads, finding communities with our Louvain obtains a $10.4\times$ speedup compared to running with a single thread, i.e., the performance of our Louvain increases by $1.6\times$ for every doubling of threads. Further, with 32 threads, finding communities with our LPA obtains a speedup of $13.5\times$ with respect to a single threaded execution, i.e., our LPA's performance increases by $1.7\times$ for every doubling of threads. Our LPA is thus more scalable than our Louvain due to its algorithmic simplicity (one only phase, in contrast to Louvain which has both a local-moving and an aggregation phase along with an expensive initialization step). At 64 threads, both our Louvain and our LPA are impacted by NUMA effects, and offer speedups of only $11.4\times$ and $18.1\times$ respectively. Note that our Louvain is significantly affected due to the reasons mentioned above.
