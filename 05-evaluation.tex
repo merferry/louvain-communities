@@ -6,25 +6,28 @@ We use a server that has two $16$-core x86-based Intel Xeon Gold 6226R processor
 \input{src/tab-dataset}
 \input{src/fig-louvain-compare}
 \input{src/fig-louvain-compares}
-\input{src/fig-rak-compare}
-\input{src/fig-rak-compares}
-\input{src/fig-louvainrak-ss}
+\input{src/fig-louvain-ss}
 
 
 
 
-\subsection{Performance Comparison for Louvain}
+\subsection{Comparing Performance of GVE-Louvain}
 
-We now compare the performance of our Louvain with Vite (Louvain), Grappolo (Louvain), and NetworKit Louvain. For Vite, we convert the graph datasets to Vite's binary graph format, run it on a single node (Vite supports distributed community detection) with threshold cycling/scaling optimization, and measure the reported average total time. For Grappolo, we measure the run it on the same system, and measure the reported total time. For NetworKit, we use a Python script to invoke \texttt{PLM} (Parallel Louvain Method), and measure the total time reported with \texttt{getTiming()}. For each graph, we measure the runtime of each implementation five times, for averaging. We also record the modularity of communities obtained, as reported by each implementation.
+We now compare the performance of GVE-Louvain with Vite (Louvain), Grappolo (Louvain), and NetworKit Louvain. For Vite, we convert the graph datasets to Vite's binary graph format, run it on a single node (Vite supports distributed community detection) with threshold cycling/scaling optimization, and measure the reported average total time. For Grappolo, we measure the run it on the same system, and measure the reported total time. For NetworKit, we use a Python script to invoke \texttt{PLM} (Parallel Louvain Method), and measure the total time reported with \texttt{getTiming()}. For each graph, we measure the runtime of each implementation five times, for averaging. We also record the modularity of communities obtained, as reported by each implementation.
 
-Figure \ref{fig:louvain-compare} shows the runtimes of Vite (Louvain), Grappolo (Louvain), NetworKit Louvain, and our Louvain on each graph in the dataset. Figure \ref{fig:louvain-compares} shows the speedup of our Louvain with respect to each implementation mentioned above. Our Louvain is on average $50\times$, $22\times$, and $20\times$ faster than Vite, Grappolo, and NetworKit respectively. On the \textit{sk-2005} graph, our Louvain finds communities in $6.8$ seconds, and thus achieve a processing rate of $560$ million edges/s. Figure \ref{fig:louvain-compare} also shows the modularity of communities obtained with each implementation on the secondary (right) Y-axis. Our Louvain on average obtains $3.1\%$ higher modularity than Vite (especially on web graph), and $0.6\%$ lower modularity than Grappolo and NetworKit (especially on social networks with poor clustering).
+Figure \ref{fig:louvain-compare} shows the runtimes of Vite (Louvain), Grappolo (Louvain), NetworKit Louvain, and GVE-Louvain on each graph in the dataset. Figure \ref{fig:louvain-compares} shows the speedup of GVE-Louvain with respect to each implementation mentioned above. GVE-Louvain is on average $50\times$, $22\times$, and $20\times$ faster than Vite, Grappolo, and NetworKit respectively. On the \textit{sk-2005} graph, GVE-Louvain finds communities in $6.8$ seconds, and thus achieve a processing rate of $560$ million edges/s. Figure \ref{fig:louvain-compare} also shows the modularity of communities obtained with each implementation on the secondary (right) Y-axis. GVE-Louvain on average obtains $3.1\%$ higher modularity than Vite (especially on web graph), and $0.6\%$ lower modularity than Grappolo and NetworKit (especially on social networks with poor clustering).
+
+\input{src/fig-louvain-hardness}
+\input{src/fig-louvain-splits}
 
 
 
 
-\subsection{Performance Comparison for LPA}
+\subsection{Results with our optimized implementation}
 
-Next, we compare the performance of our LPA with NetworKit LPA. We use a Python script to call NetworKit's \texttt{PLP} (Parallel Label Propagation), and measure the runtime of their implementation with \texttt{getTiming()}. In Figure \ref{fig:rak-compare}, we compare the performance of our LPA and NetworKit LPA. We also attempt to compare with igraph LPA and Traag et al. FLPA, but find the runtime with both implementations to be extremely high. As before, we measure the runtime with our LPA and NetworKit LPA five times, for averaging. Our LPA is on average $40.5\times$ faster than NetworKit, and is significantly faster on road networks and protein k-mer graphs (which have a low $|E|/|V|$ ratio). On the \textit{sk-2005} graph, our LPA finds communities in $2.7$ seconds, and thus achieve a processing rate of $1.4$ billion edges/s.
+The combined optimizations yield impressive performance improvements in the OpenMP-based \StaLou{}, with a completion time of $6.8$ seconds on the \textit{sk-2005} graph containing $3.8 B$ edges (refer to Figure \ref{fig:louvainrak-sta}). We observe that graphs with lower average degree (\textit{road networks} and \textit{protein k-mer graphs}) and graphs with poor community structure (such as \verb|com-LiveJournal| and \verb|com-Orkut|) have a larger $\text{runtime}/|E|$ factor, as shown in Figure \ref{fig:louvainrak-hardness--louvain}.
+
+The phase-wise and pass-wise split of the optimized \StaLou{} is shown in Figure \ref{fig:louvain-splits}. Note how $48\%$ (most) of the runtime of the algorithm is spent in the local-moving phase, while only $29\%$ of the runtime is spent in the aggregation phase of the algorithm. Further, $68\%$ (most) of the runtime is spent in the first pass of the algorithm, which is the most expensive pass due to the size of the original graph (later passes work on super-vertex graphs) \cite{com-wickramaarachchi14}.
 
 
 

@@ -1,11 +1,11 @@
-Consider an undirected graph $G(V, E, w)$ with $V$ representing the set of vertices, $E$ the set of edges, and $w_{ij} = w_{ji}$ denoting the weight associated with each edge. In the case of an unweighted graph, we assume unit weight for each edge ($w_{ij} = 1$). Additionally, the neighbors of a vertex $i$ are denoted as $J_i = {j\ |\ (i, j) \in E}$, the weighted degree of each vertex as $K_i = \sum_{j \in J_i} w_{ij}$, the total number of vertices as $N = |V|$, the total number of edges as $M = |E|$, and the sum of edge weights in the undirected graph as $m = \sum_{i, j \in V} w_{ij}/2$.
+Consider an undirected graph $G(V, E, w)$ with $V$ representing the set of vertices, $E$ the set of edges, and $w_{ij} = w_{ji}$ denoting the weight associated with each edge. In the case of an unweighted graph, we assume unit weight for each edge ($w_{ij} = 1$). Additionally, the neighbors of a vertex $i$ are denoted as $J_i = \{j\ |\ (i, j) \in E\}$, the weighted degree of each vertex as $K_i = \sum_{j \in J_i} w_{ij}$, the total number of vertices as $N = |V|$, the total number of edges as $M = |E|$, and the sum of edge weights in the undirected graph as $m = \sum_{i, j \in V} w_{ij}/2$.
 
 
 
 
 \subsection{Community detection}
 
-Disjoint community detection is the process of identifying a community membership mapping, $C: V \rightarrow \Gamma$, where each vertex $i \in V$ is assigned a community-id $c \in \Gamma$, where $\Gamma$ is the set of community-ids. We denote the vertices of a community $c \in \Gamma$ as $V_c$, and the community that a vertex $i$ belongs to as $C_i$. Further, we denote the neighbors of vertex $i$ belonging to a community $c$ as $J_{i \rightarrow c} = {j\ |\ j \in J_i\ and\ C_j = c}$, the sum of those edge weights as $K_{i \rightarrow c} = {w_{ij}\ |\ j \in J_{i \rightarrow c}}$, the sum of weights of edges within a community $c$ as $\sigma_c = \sum_{(i, j) \in E\ and\ C_i = C_j = c} w_{ij}$, and the total edge weight of a community $c$ as $\Sigma_c = \sum_{(i, j) \in E \mbox{and}\ C_i = c} w_{ij}$ \cite{com-zarayeneh21, com-leskovec21}.
+Disjoint community detection is the process of identifying a community membership mapping, $C: V \rightarrow \Gamma$, where each vertex $i \in V$ is assigned a community-id $c \in \Gamma$, where $\Gamma$ is the set of community-ids. We denote the vertices of a community $c \in \Gamma$ as $V_c$, and the community that a vertex $i$ belongs to as $C_i$. Further, we denote the neighbors of vertex $i$ belonging to a community $c$ as $J_{i \rightarrow c} = \{j\ |\ j \in J_i\ and\ C_j = c\}$, the sum of those edge weights as $K_{i \rightarrow c} = \{w_{ij}\ |\ j \in J_{i \rightarrow c}\}$, the sum of weights of edges within a community $c$ as $\sigma_c = \sum_{(i, j) \in E\ and\ C_i = C_j = c} w_{ij}$, and the total edge weight of a community $c$ as $\Sigma_c = \sum_{(i, j) \in E\ and\ C_i = c} w_{ij}$ \cite{com-leskovec21}.
 
 
 
@@ -30,20 +30,7 @@ Modularity serves as a\ignore{fitness} metric for assessing the quality of commu
 
 
 
-\subsection{Algorithms for Community detection}
-
-\subsubsection{Louvain algorithm \cite{com-blondel08}}
+\subsection{Louvain algorithm}
 \label{sec:about-louvain}
 
-The Louvain method is a modularity optimization based agglomerative algorithm for identifying high quality disjoint communities in large networks. It has a time complexity of $O (L |E|)$ (with $L$ being the total number of iterations performed), and a space complexity of $O(|V| + |E|)$ \cite{com-lancichinetti09}. The algorithm consists of two phases: the \textit{local-moving phase}, where each vertex $i$ greedily decides to move to the community of one of its neighbors $j \in J_i$ that gives the greatest increase in modularity $\Delta Q_{i:C_i \rightarrow C_j}$ (using Equation \ref{eq:delta-modularity}), and the \textit{aggregation phase}, where all the vertices in a community are collapsed into a single super-vertex. These two phases make up one pass, which repeats until there is no further increase in modularity \cite{com-blondel08, com-leskovec21}. While Louvain obtains high-quality communities, we find it to be $2.3 - 14\times$ slower than \textit{LPA} (which obtains communities of lower quality by $3.0 - 30\%$).
-
-
-\subsubsection{Label Propagation Algorithm (LPA) \cite{com-raghavan07}}
-\label{sec:about-rak}
-
-LPA is a popular diffusion-based method for identifying communities of medium quality in large networks. It is simpler, faster, and more scalable compared to the Louvain method. In LPA, each vertex $i$ is starts with a unique label (community id) $C_i$. During each iteration, vertices adopt the label with the highest interconnecting weight, as shown in Equation \ref{eq:lpa}. Through this iterative process, a consensus among densely connected groups of vertices is achieved, forming communities. The algorithm converges when at least $1-\tau$ fraction of vertices (where $\tau$ is the tolerance parameter) maintain their community membership. LPA exhibits a time complexity of $O(L |E|)$ and a space complexity of $O(|V| + |E|)$, with $L$ denoting the number of iterations performed \cite{com-raghavan07}. We have experimented with COPRA \cite{com-gregory10}, SLPA \cite{com-xie11}, and LabelRank \cite{com-xie13}, but found LPA to be the most performant, while yielding communities of equivalent quality \cite{sahu2023selecting}.
-
-\begin{equation}
-\label{eq:lpa}
-  C_i =\ \underset{c\ \in \ \Gamma}{\arg\max} { \sum_{j \in J_i\ |\ C_j = c} w_{ij} }
-\end{equation}
+The Louvain method \cite{com-blondel08} is a modularity optimization based agglomerative algorithm for identifying high quality disjoint communities in large networks. It has a time complexity of $O (L |E|)$ (with $L$ being the total number of iterations performed), and a space complexity of $O(|V| + |E|)$ \cite{com-lancichinetti09}. The algorithm consists of two phases: the \textit{local-moving phase}, where each vertex $i$ greedily decides to move to the community of one of its neighbors $j \in J_i$ that gives the greatest increase in modularity $\Delta Q_{i:C_i \rightarrow C_j}$ (using Equation \ref{eq:delta-modularity}), and the \textit{aggregation phase}, where all the vertices in a community are collapsed into a single super-vertex. These two phases make up one pass, which repeats until there is no further increase in modularity \cite{com-blondel08, com-leskovec21}. We observe that Louvain obtains high-quality communities, with $3.0 - 30\%$ higher modularity than that obtained by LPA, but requires $2.3 - 14\times$ longer to converge.
