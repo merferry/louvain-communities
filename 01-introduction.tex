@@ -2,12 +2,14 @@ Community detection\ignore{, also know as clustering,} is the problem of uncover
 
 In recent years, the collection of data and the relationships among them, represented as graphs, have reached unmatched levels. This has necessitated the design of efficient parallel algorithms for community detection on large networks. The multicore/shared memory setting is crucial for community detection due to its energy efficiency and the prevalence of hardware with extensive DRAM sizes.\ignore{Optimizing parallel community detection algorithms for modern hardware architectures can yield notable performance benefits and competitive advantages across applications.} However, many of the current algorithms for community detection are challenging to parallelize due to their irregular and inherently sequential nature \cite{com-halappanavar17}, in addition to the complexities of handling concurrency, optimizing data access, reducing contention, minimizing load imbalance. Existing studies on Louvain propose algorithmic optimizations and parallelization techniques, but do not address optimization for the aggregation phase of the Louvain algorithm, which emerges as a bottleneck after the local-moving phase of the algorithm has been optimized. Moreover, these optimization techniques are scattered over a number of papers, making it difficult for a reader to get a grip over them.
 
+\input{src/tab-compare}
 
 
 
-\subsection{Our Contributions}
 
-This report introduces GVE-Louvain, an optimized parallel implementation of Louvain\footnote{https://github.com/puzzlef/louvain-communities-openmp} for shared memory multicores. On a machine with two 16-core Intel Xeon Gold 6226R processors, GVE-Louvain outperforms Vite, Grappolo, and NetworKit Louvain by $50\times$, $22\times$, and $20\times$ respectively, achieving a processing rate of $560 M$ edges/s on a $3.8 B$ edge graph. With doubling of threads, GVE-Louvain exhibits an average performance scaling of $1.6\times$.
+\ignore{\subsection{Our Contributions}}
+
+\ignore{This report introduces GVE-Louvain, an optimized parallel implementation of Louvain\footnote{https://github.com/puzzlef/louvain-communities-openmp} for shared memory multicores. On a machine with two 16-core Intel Xeon Gold 6226R processors, GVE-Louvain outperforms Vite, Grappolo, and NetworKit Louvain by $50\times$, $22\times$, and $20\times$ respectively, achieving a processing rate of $560 M$ edges/s on a $3.8 B$ edge graph. With doubling of threads, GVE-Louvain exhibits an average performance scaling of $1.6\times$.}
 
 
 
