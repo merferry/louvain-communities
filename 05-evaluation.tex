@@ -10,6 +10,7 @@ We use a server that has two $16$-core x86-based Intel Xeon Gold 6226R processor
 
 
 \subsection{Comparing Performance of GVE-Louvain}
+\label{sec:comparison}
 
 We now compare the performance of GVE-Louvain with Vite (Louvain), Grappolo (Louvain), and NetworKit Louvain. For Vite, we convert the graph datasets to Vite's binary graph format, run it on a single node\ignore{(Vite supports distributed community detection)} with threshold cycling/scaling optimization, and measure the reported average total time. For Grappolo, we measure the run it on the same system, and measure the reported total time. For NetworKit, we use a Python script to invoke \texttt{PLM} (Parallel Louvain Method), and measure the total time reported with \texttt{getTiming()}. For each graph, we measure the runtime of each implementation five times, for averaging. We also record the modularity of communities obtained, as reported by each implementation.
 
