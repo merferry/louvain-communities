@@ -1,6 +1,6 @@
 \begin{table}[hbtp]
   \centering
-  \caption{Speedup of our multicore implementation of Louvain algorithm compared to other state-of-the-art implementations. Direct comparisons are based on running the given implementation on our server, while indirect comparisons (denoted with a $*$, details given in Section \ref{sec:comparison-indirect}) involve comparing results obtained by the given implementation relative to a common reference (Grappolo).}
+  \caption{Speedup of our multicore implementation of Louvain algorithm compared to other state-of-the-art implementations. Direct comparisons are based on running the given implementation on our server, while indirect comparisons (denoted with a $*$, details given in Section \ref{sec:comparison-indirect}) involve comparing results obtained by the given implementation relative to a common reference (Grappolo). Among the Louvain implementations, some are multi-core, while others are categorized as multi-node (\textit{nodes}), hybrid GPU (\textit{GPU}), multi-GPU (\textit{GPUs, 1 GPU}), and multi-node multi-GPU (\textit{DGPUs}).}
   \label{tab:compare}
   \begin{tabular}{|c|c||c|}
     \toprule
@@ -17,13 +17,13 @@
     APLM \cite{com-fazlali17} & 2017 & $7.7\times^*$ \\ \hline
     Ghosh et al. (\ignore{8 }nodes) \cite{com-ghosh18} & 2018 & $5.9\times^*$ \\ \hline
     HyDetect (GPU) \cite{com-bhowmik19} & 2019 & $54\times^*$ \\ \hline
-    Naim et al. (GPU) \cite{com-naim17} & 2017 & $9.8\times^*$ \\ \hline
+    Rundemanen (GPU) \cite{com-naim17} & 2017 & $9.8\times^*$ \\ \hline
     ACLM (GPU) \cite{com-mohammadi20} & 2020 & $6.0\times^*$ \\ \hline
-    Chou and Ghosh (1 GPU) \cite{chou2022batched} & 2022 & $9.2\times^*$ \\ \hline
+    Nido (1 GPU) \cite{chou2022batched} & 2022 & $9.2\times^*$ \\ \hline
     cuVite (1 GPU) \cite{com-gawande22} & 2022 & $6.7\times^*$ \\ \hline
     cuGraph (1 GPU) \cite{hricik2020using} & 2020 & $4.8\times^*$ \\ \hline
     Cheong et al. (\ignore{16/24 }GPUs) \cite{com-cheong13} & 2013 & $8.3\times^*$ \\ \hline
-    Bhowmick et al. (\ignore{8 }GPUs) \cite{com-bhowmick22} & 2022 & $4.9\times^*$ \\ \hline
+    Bhowmick et al. (\ignore{8 }DGPUs) \cite{com-bhowmick22} & 2022 & $4.9\times^*$ \\ \hline
   \bottomrule
   \end{tabular}
 \end{table}
