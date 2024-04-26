@@ -22,7 +22,7 @@
   \ForAll{$l_p \in [0 .. \text{\small{MAX\_PASSES}})$} \label{alg:louvain--passes-begin}
     \State $\Sigma' \gets K' \gets vertexWeights(G')$ \textbf{;} $C' \gets [0 .. |V'|)$ \label{alg:louvain--reset-weights}
     \State Mark all vertices in $G'$ as unprocessed \label{alg:louvain--reset-affected}
-    \State $l_i \gets louvainMove(G', C', K', \Sigma')$ \label{alg:louvain--local-move}
+    \State $l_i \gets louvainMove(G', C', K', \Sigma')$ \Comment{Alg. \ref{alg:louvainlm}} \label{alg:louvain--local-move}
     \If{$l_i \le 1$} \textbf{break} \Comment{Globally converged?} \label{alg:louvain--globally-converged}
     \EndIf
     \State $|\Gamma|, |\Gamma_{old}| \gets$ Number of communities in $C$, $C'$
@@ -30,7 +30,7 @@
     \EndIf
     \State $C' \gets$ Renumber communities in $C'$ \label{alg:louvain--renumber}
     \State $C \gets$ Lookup dendrogram using $C$ to $C'$ \label{alg:louvain--lookup}
-    \State $G' \gets louvainAggregate(G', C')$ \label{alg:louvain--aggregate}
+    \State $G' \gets louvainAggregate(G', C')$ \Comment{Alg. \ref{alg:louvainag}} \label{alg:louvain--aggregate}
     \State $\tau \gets \tau / \text{\small{TOLERANCE\_DROP}}$ \Comment{Threshold scaling} \label{alg:louvain--threshold-scaling}
   \EndFor \label{alg:louvain--passes-end}
   \State $C \gets$ Lookup dendrogram using $C$ to $C'$ \label{alg:louvain--lookup-last}
