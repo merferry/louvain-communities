@@ -3,7 +3,7 @@
 
 We use a parallel implementation of the Louvain method to determine suitable parameter settings and optimize the original algorithm through experimentation with a variety of techniques. We use \textit{asynchronous} version of Louvain, where threads work independently on different parts of the graph. This allows for faster convergence but can also lead to more variability in the final result \cite{com-blondel08, com-halappanavar17}. Further, we allocate a separate hashtable per thread to keep track of the delta-modularity of moving to each community linked to a vertex in the local-moving phase of the algorithm, and to keep track of the total edge weight from one super-vertex to the other super-vertices in the aggregation phase of the algorithm.
 
-Our optimizations include using OpenMP's \verb|dynamic| loop schedule, limiting the number of iterations per pass to $20$, using a tolerance drop rate of $10$, setting an initial tolerance of $0.01$, using an aggregation tolerance of $0.8$, employing vertex pruning, making use of parallel prefix sum and preallocated Compressed Sparse Row (CSR) data structures for finding community vertices and for storing the super-vertex graph during the aggregation phase, and using fast collision-free per-thread hashtables which are well separated in their memory addresses (\textit{Far-KV}) for the local-moving and aggregation phases of the algorithm. Details on each of the optimizations is given below.
+Our optimizations include using OpenMP's \verb|dynamic| loop schedule, limiting the number of iterations per pass to $20$, using a tolerance drop rate of $10$, setting an initial tolerance of $0.01$, using an aggregation tolerance of $0.8$, employing vertex pruning, making use of parallel prefix sum and preallocated Compressed Sparse Row (CSR) data structures for finding community vertices and for storing the super-vertex graph during the aggregation phase, and using fast collision-free per-thread hashtables which are well separated in their memory addresses (\textit{Far-KV}) for the local-moving and aggregation phases of the algorithm. Details\ignore{ on each of the optimizations is} are given below.
 
 For each optimization, we test a number of relevant alternatives, and show the relative time and the relative modularity of communities obtained by each alternative in Figure \ref{fig:louvain-opt}. This result is obtained by running the tests on each graph in the dataset (see Table \ref{tab:dataset}), $5$ times on each graph to reduce the impact of noise, taking their geometric mean and arithmetic mean for the runtime and modularity respectively, and representing them as a ratio within each optimization category.
 
@@ -37,6 +37,8 @@ The aggregation tolerance determines the point at which communities are consider
 Vertex pruning is a technique that is used to minimize unnecessary computation \cite{com-ryu16, com-ozaki16, com-zhang21, com-shi21}. Here, when a vertex changes its community, its marks its neighbors to be processed. Once a vertex has been processed, it is marked as not to be processed. However, it comes with an added overhead of marking an unmarking of vertices. Based on our results, vertex pruning justifies this overhead, and should be enabled for $11\%$ improvement in performance. An illustration of this\ignore{vertex pruning optimization} is shown in Figure \ref{fig:louvain-pruning}.
 
 \input{src/fig-louvain-pruning}
+\input{src/fig-louvain-hashtable}
+\input{src/fig-louvain-opt}
 
 
 \subsubsection{Finding community vertices for aggregation phase}
@@ -53,28 +55,25 @@ After the list of vertices belonging to each community have been obtained, the c
 
 One can use C++'s inbuilt maps as per-thread (independent) hashtables for the Louvain algorithm. But this has poor performance. So we use a key-list and a full-size values array (collision-free) to dramatically improve performance. However, if the memory addresses of the hashtables are nearby (\textit{Close-KV}) --- as with NetworKit Louvain \cite{staudt2016networkit}, even if each thread uses its own hashtable exclusively, performance is not as high. This is possibly due to false cache-sharing. Alternatively, if we ensure that the memory address of each hashtable are farther away (\textit{Far-KV}), the performance improves. Our results indicate that \textit{Far-KV} has the best performance and is $4.4\times$ faster than \textit{Map}, and $1.3\times$ faster than \textit{Close-KV} hashtable implementations. An illustration of \textit{Far-KV} hashtable is shown in Figure \ref{fig:louvain-hashtable}.
 
-\input{src/fig-louvain-hashtable}
-\input{src/fig-louvain-opt}
-
 
 
 
 \subsection{Our optimized Louvain implementation}
 
-We now explain the implementation of GVE-Louvain in Algorithms \ref{alg:louvain}, \ref{alg:louvainlm}, and \ref{alg:louvainag}. A flow diagram illustrating the first pass of GVE-Louvain is shown in Figure \ref{fig:louvain-pass}.
+We now explain the implementation of GVE-Louvain in Algorithms \ref{alg:louvain}, \ref{alg:louvainlm}, and \ref{alg:louvainag}. We aim to incorporate GVE-Louvain into our upcoming command-line graph processing tool named "GVE", derived from "Graph(Vertices, Edges)". GVE-Louvain exhibits a time complexity of $O(KM)$, where $K$ signifies the total iterations conducted. Its space complexity is $O(TN + M)$, where $T$ denotes the number of threads utilized, and $TN$ represents the collision-free hash tables $H_t$ employed per thread. A flow diagram illustrating the first pass of GVE-Louvain is shown in Figure \ref{fig:louvain-pass}.
 
 
 \subsubsection{Main step of GVE-Louvain}
 
 The main step of GVE-Louvain (\texttt{louvian()} function) is outlined in Algorithm \ref{alg:louvain}. It encompasses initialization, the local-moving phase, and the aggregation phase. Here, the \texttt{louvain()} function takes the input graph $G$, and returns the community membership $C$ for each vertex. In line \ref{alg:louvain--initialization}, we first initialize the community membership $C$ of each vertex in $G$, and perform passes of the Louvain algorithm, limited to $MAX\_PASSES$ (lines \ref{alg:louvain--passes-begin}-\ref{alg:louvain--passes-end}). In each pass, we initialize the total edge weight of each vertex $K'$, the total edge weight of each community $\Sigma'$, and the community membership $C'$ of each vertex in the current graph $G'$ (line \ref{alg:louvain--reset-weights}); and mark all vertices as unprocessed (line \ref{alg:louvain--reset-affected}).
 
-Next, in line \ref{alg:louvain--local-move}, we perform the local-moving phase by calling \texttt{louvainMove()} (Algorithm $\ref{alg:louvainlm}$), which optimizes community assignments. If the local-moving phase converged in a single iteration, global convergence is implied and we terminate the passes (line \ref{alg:louvain--globally-converged}). Further, if the drop is community count $|\Gamma|$ is too small, we have reached the point of diminishing returns, and thus stop at the current pass (line \ref{alg:louvain--aggregation-tolerance}).
-
-In case convergence has not been achieved, we renumber communities (line \ref{alg:louvain--renumber}), update top-level community memberships $C$ with dendrogram lookup (line \ref{alg:louvain--lookup}), perform the aggregation phase by calling \texttt{louvainAggregate()} (Algorithm \ref{alg:louvainag}), and scale the convergence threshold for subsequent passes, i.e., perform threshold scaling (line \ref{alg:louvain--threshold-scaling}). The next pass continues in line \ref{alg:louvain--passes-begin}. At the end of all passes, we perform a final update of the top-level community memberships $C$ with dendrogram lookup (line \ref{alg:louvain--lookup-last}), and return the top-level community membership $C$ of each vertex in $G$.
-
 \input{src/alg-louvain}
 \input{src/alg-louvainlm}
 \input{src/alg-louvainag}
+
+Next, in line \ref{alg:louvain--local-move}, we perform the local-moving phase by calling \texttt{louvainMove()} (Algorithm $\ref{alg:louvainlm}$), which optimizes community assignments. If the local-moving phase converged in a single iteration, global convergence is implied and we terminate the passes (line \ref{alg:louvain--globally-converged}). Further, if the drop is community count $|\Gamma|$ is too small, we have reached the point of diminishing returns, and thus stop at the current pass (line \ref{alg:louvain--aggregation-tolerance}).
+
+In case convergence has not been achieved, we renumber communities (line \ref{alg:louvain--renumber}), update top-level community memberships $C$ with dendrogram lookup (line \ref{alg:louvain--lookup}), perform the aggregation phase by calling \texttt{louvainAggregate()} (Algorithm \ref{alg:louvainag}), and scale the convergence threshold for subsequent passes, i.e., perform threshold scaling (line \ref{alg:louvain--threshold-scaling}). The next pass continues in line \ref{alg:louvain--passes-begin}. At the end of all passes, we perform a final update of the top-level community memberships $C$ with dendrogram lookup (line \ref{alg:louvain--lookup-last}), and return the top-level community membership $C$ of each vertex in $G$.
 
 
 \subsubsection{Local-moving phase of GVE-Louvain}

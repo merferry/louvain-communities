@@ -6,7 +6,6 @@
 \Require{$C'$: Community membership of each vertex}
 \Require{$K'$: Total edge weight of each vertex}
 \Require{$\Sigma'$: Total edge weight of each community}
-\Ensure{$G'_{C'}$: Community vertices (CSR)}
 \Ensure{$H_t$: Collision-free per-thread hashtable}
 \Ensure{$l_i$: Number of iterations performed}
 \Ensure{$\tau$: Per iteration tolerance}
@@ -38,8 +37,9 @@
 
 \Function{scanCommunities}{$H_t, G', C', i, self$}
   \ForAll{$(j, w) \in G'.edges(i)$}
-    \If{$self$ \textbf{or} $i \neq j$} $H_t \gets H_t[C'[j]] + w$
+    \If{\textbf{not} $self$ and $i = j$} \textbf{continue}
     \EndIf
+    \State $H_t[C'[j]] \gets H_t[C'[j]] + w$
   \EndFor
   \Return{$H_t$}
 \EndFunction
